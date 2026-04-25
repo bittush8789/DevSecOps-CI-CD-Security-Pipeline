@@ -1,0 +1,108 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "devsecops-backend"
+        REGISTRY_URL = "your-aws-account-id.dkr.ecr.us-east-1.amazonaws.com"
+        SONAR_QUBE_SERVER = 'SonarQubeServer'
+    }
+
+    stages {
+        stage('🚀 Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('🛡️ Secret Scan') {
+            steps {
+                sh 'gitleaks detect --source . --verbose'
+            }
+        }
+
+        stage('🔍 SAST Scan') {
+            parallel {
+                stage('Bandit (Python)') {
+                    steps {
+                        sh 'bandit -r backend/app'
+                    }
+                }
+                stage('Semgrep') {
+                    steps {
+                        sh 'semgrep --config p/security-audit .'
+                    }
+                }
+            }
+        }
+
+        stage('📦 SCA Scan (Trivy)') {
+            steps {
+                sh 'trivy fs . --severity CRITICAL,HIGH'
+            }
+        }
+
+        stage('📊 SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv("${SONAR_QUBE_SERVER}") {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
+        stage('🏗️ Build Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:latest -f docker/backend/Dockerfile backend"
+            }
+        }
+
+        stage('🛡️ Image Scan') {
+            steps {
+                sh "trivy image ${DOCKER_IMAGE}:latest --severity CRITICAL,HIGH"
+            }
+        }
+
+        stage('🚚 Push to ECR') {
+            steps {
+                sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                sh "docker tag ${DOCKER_IMAGE}:latest ${REGISTRY_URL}/${DOCKER_IMAGE}:latest"
+                sh "docker push ${REGISTRY_URL}/${DOCKER_IMAGE}:latest"
+            }
+        }
+
+        stage('☸️ Deploy Staging') {
+            steps {
+                sh 'helm upgrade --install devsecops-staging ./helm/app --namespace staging'
+            }
+        }
+
+        stage('⚡ DAST Scan') {
+            steps {
+                sh 'zap-full-scan.py -t http://staging.devsecops.local'
+            }
+        }
+
+        stage('🛑 Approval Gate') {
+            steps {
+                input message: "Deploy to Production?", ok: "Release!"
+            }
+        }
+
+        stage('🚀 Deploy Production') {
+            steps {
+                sh 'helm upgrade --install devsecops-prod ./helm/app --namespace production'
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        failure {
+            echo "Pipeline failed! Sending alerts..."
+        }
+    }
+}
