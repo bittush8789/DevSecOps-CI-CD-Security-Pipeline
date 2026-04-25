@@ -1,96 +1,122 @@
-# 🛡️ Enterprise-Grade DevSecOps CI/CD Security Pipeline
-### *Transforming Security from a Gatekeeper to an Enabler*
+# 🛡️ Enterprise DevSecOps CI/CD Security Pipeline
+### *The Gold Standard for Secure Software Delivery Life Cycle (SSDLC)*
 
 [![Pipeline Status](https://github.com/bittush8789/DevSecOps-CI-CD-Security-Pipeline/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/bittush8789/DevSecOps-CI-CD-Security-Pipeline/actions)
 [![SAST: Semgrep](https://img.shields.io/badge/SAST-Semgrep-623CE4)](https://semgrep.dev/)
 [![SCA: Trivy](https://img.shields.io/badge/SCA-Trivy-3FC0FC)](https://aquasecurity.github.io/trivy/)
 [![DAST: OWASP ZAP](https://img.shields.io/badge/DAST-OWASP_ZAP-2061AF)](https://www.zaproxy.org/)
-[![IaC: Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC)](https://www.terraform.io/)
-[![K8s: EKS](https://img.shields.io/badge/K8s-AWS_EKS-326CE5)](https://aws.amazon.com/eks/)
+[![Compliance: SOC2](https://img.shields.io/badge/Compliance-SOC2_Ready-emerald)](https://www.aicpa.org/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
 ---
 
-## 📖 Project Overview
-This project addresses the critical challenge of insecure software delivery. It implements a **Shift-Left Security** strategy by integrating comprehensive scanning tools directly into the CI/CD pipeline.
+## 📖 Executive Summary
+This project represents a production-grade implementation of a **Shift-Left Security** strategy. By integrating security controls directly into the developer workflow, we transform security from a final bottleneck into a continuous, automated enabler of high-velocity releases.
 
-### 💼 Business Problem Solved
-- **Reduced Risk**: Blocks 99% of common vulnerabilities (OWASP Top 10) before deployment.
-- **Lower Costs**: Fixing bugs in development is 10x cheaper than in production.
-- **Compliance Ready**: Built-in audit trails and security reports for SOC2/ISO27001 readiness.
+### 💎 Key Business Value
+- **Zero-Day Protection**: Continuous SCA scanning of 3rd-party dependencies.
+- **Regulatory Alignment**: Automated evidence generation for SOC2, HIPAA, and GDPR audits.
+- **Developer Productivity**: Immediate feedback on security hotspots during the PR phase.
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Architecture & Pipeline Flow
 
 ```mermaid
-graph TD
-    A[Developer Push] -->|Trigger| B[GitHub Actions / Jenkins]
-    B --> C{Security Gates}
-    
-    subgraph "Shift-Left Security"
-    C --> D[Gitleaks: Secrets]
-    D --> E[Semgrep/Bandit: SAST]
-    E --> F[Trivy: SCA]
-    F --> G[SonarQube: Quality]
+graph LR
+    subgraph "Development"
+    A[Code Push] --> B[Gitleaks: Secret Scan]
     end
     
-    G -->|Pass| H[Build & Harden Image]
-    H --> I[Trivy: Image Scan]
-    I -->|Secure| J[Push to ECR]
+    subgraph "CI: Quality & SAST"
+    B --> C[Semgrep/Bandit: SAST]
+    C --> D[SonarQube: Quality Gate]
+    D --> E[Trivy FS: SCA]
+    end
     
-    J --> K[Deploy Staging: EKS/KIND]
-    K --> L[OWASP ZAP: DAST]
-    L -->|Approved| M[Production Release]
+    subgraph "CD: Hardening & Deploy"
+    E --> F[Hardened Docker Build]
+    F --> G[Trivy Image: CVE Scan]
+    G --> H[Deploy to EKS/KIND]
+    end
+    
+    subgraph "Runtime: DAST & Observability"
+    H --> I[OWASP ZAP: DAST]
+    I --> J[Prometheus/Grafana]
+    end
 ```
 
 ---
 
-## 🛠️ Toolchain Installation (Ubuntu/Debian)
-
-### **1. Security Scanners**
-| Tool | Installation Commands | Usage |
-| :--- | :--- | :--- |
-| **Gitleaks** | `wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_linux_x64.tar.gz && tar -xf gitleaks* && sudo mv gitleaks /usr/local/bin/` | `gitleaks detect -v` |
-| **Trivy** | `sudo apt-get install wget apt-transport-https gnupg lsb-release && wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add - && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list && sudo apt-get update && sudo apt-get install trivy` | `trivy fs .` |
-| **Semgrep** | `python3 -m pip install semgrep` | `semgrep --config p/security-audit .` |
-| **Bandit** | `pip3 install bandit` | `bandit -r backend/app` |
-
-### **2. Infrastructure & Cloud**
-| Tool | Installation Commands | Usage |
-| :--- | :--- | :--- |
-| **Docker** | `sudo apt update && sudo apt install docker.io -y && sudo usermod -aG docker $USER` | `docker build ...` |
-| **kubectl** | `curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl` | `kubectl get pods` |
-| **Terraform** | `wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list && sudo apt update && sudo apt install terraform` | `terraform apply` |
-| **Helm** | `curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash` | `helm install ...` |
-| **KIND** | `[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind` | `kind create cluster` |
+## 📁 Project Structure
+```text
+devsecops-pipeline/
+├── .github/workflows/   # GitHub Actions (Security Gates)
+├── backend/             # FastAPI Secure API (JWT, Rate Limiting)
+├── frontend/            # Next.js 14 Premium UI
+├── kubernetes/          # Hardened Manifests & Network Policies
+├── terraform/           # IaC for AWS EKS & VPC
+├── helm/                # Application Packaging
+├── jenkins/             # Jenkins Pipeline-as-Code
+├── monitoring/          # Security Dashboards & Rules
+└── scripts/             # Setup & Deployment Automation
+```
 
 ---
 
-## 🚀 Quick Start Guide (Local Development)
+## 🛠️ Toolchain Implementation (Ubuntu/Debian)
+
+### **1. Security Scanners**
+| Tool | Installation | Strategic Role |
+| :--- | :--- | :--- |
+| **Gitleaks** | `wget ... && sudo mv gitleaks /usr/local/bin/` | Secret & Token Prevention |
+| **Trivy** | `sudo apt install trivy` | SCA & Container CVE Analysis |
+| **Semgrep** | `pip3 install semgrep` | Pattern-based SAST |
+| **Bandit** | `pip3 install bandit` | Python-specific Security Audit |
+
+### **2. Infrastructure**
+| Tool | Installation | Strategic Role |
+| :--- | :--- | :--- |
+| **Terraform** | `sudo apt install terraform` | Immutable Infrastructure (IaC) |
+| **kubectl** | `sudo install kubectl` | Cluster Orchestration |
+| **KIND** | `curl -Lo ./kind ...` | Local Cluster Simulation |
+
+---
+
+## 🛑 Pipeline Gate Logic (Fail-Fast Strategy)
+The pipeline is configured to **FAIL** if any of the following conditions are met:
+- **Secrets Found**: Any high-entropy string detected by Gitleaks.
+- **Critical CVEs**: Any `CRITICAL` or `HIGH` vulnerability found by Trivy.
+- **Quality Gate Failure**: SonarQube reliability or security score falls below `A`.
+- **Insecure Code**: SAST detection of SQL Injection, XSS, or Insecure Deserialization.
+
+---
+
+## 🚀 Deployment Guide
+
+### **Local Testing (KIND)**
 ```bash
-# Local K8s testing
+# Automated multi-node setup with Ingress
 chmod +x scripts/setup-kind.sh
 ./scripts/setup-kind.sh
 ```
 
----
-
-## 🏗️ Multi-Platform CI/CD Support
-- **GitHub Actions**: `.github/workflows/pipeline.yaml`
-- **Jenkins**: `jenkins/Jenkinsfile` (Requires SonarQube & Docker plugins)
-
----
-
-## 📊 Security Metrics
-Includes **Prometheus Rules** for real-time vulnerability tracking and security context violations.
+### **Cloud Provisioning (AWS)**
+```bash
+cd terraform
+terraform init && terraform apply -auto-approve
+```
 
 ---
 
-## 💼 Interview Prep
-**Q**: *How do you manage security in a production Kubernetes cluster?*
-**A**: I implement **NetworkPolicies** to enforce zero-trust isolation, use **PodSecurityContexts** to prevent privilege escalation, and integrate **Image Scanning** in the CI/CD to block vulnerable containers.
+## 💼 Professional Interview Talking Points
+**Question**: *How do you handle 'Security Fatigue' among developers?*
+**Answer**: I utilize **Baseline Scanning** and **Suppression Files**. We only block for `HIGH` and `CRITICAL` issues that are actionable, while providing educational links in the PR comments to help developers learn from the security findings.
 
 ---
 
-## 🛡️ Support
-- **Author**: Bittu Sharma | **Version**: 1.0.0 | **License**: MIT
+## 🛡️ Support & Compliance
+- **Author**: Bittu Sharma | **Version**: 2.0.0
+- **Compliance**: SOC2 Type II (Standardized) | **License**: MIT
+
+---
+*Precision Engineered for Cloud-Native Security.*
