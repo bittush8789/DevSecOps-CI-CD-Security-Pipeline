@@ -59,10 +59,6 @@ graph TD
 - **Trivy FS**: Analyzes `package.json` and `requirements.txt` for known CVEs in 3rd-party libraries.
 - **Gate Logic**: Fails the build if any `CRITICAL` or `HIGH` severity vulnerabilities are detected.
 
-### 4. **Infrastructure Hardening (Terraform & K8s)**
-- **IaC**: Terraform scripts enforce **Private Subnets** and **Encryption at Rest** for EKS.
-- **NetworkPolicies**: Implements a "Default Deny" egress/ingress policy to isolate workloads.
-
 ---
 
 ## 🚀 Quick Start Guide
@@ -74,12 +70,27 @@ chmod +x scripts/setup-kind.sh
 ./scripts/setup-kind.sh
 ```
 
-### ☁️ Cloud Deployment (AWS)
-```bash
-cd terraform
-terraform init
-terraform apply -auto-approve
-```
+---
+
+## 🛠️ Toolchain Installation & Reference
+
+### **1. Security Scanners**
+| Tool | Installation (Linux/macOS) | Usage Command |
+| :--- | :--- | :--- |
+| **Gitleaks** | `brew install gitleaks` | `gitleaks detect --source . -v` |
+| **Trivy** | `brew install aquasecurity/trivy/trivy` | `trivy fs .` or `trivy image <img_id>` |
+| **Semgrep** | `python3 -m pip install semgrep` | `semgrep --config p/security-audit .` |
+| **Bandit** | `pip install bandit` | `bandit -r backend/app` |
+| **OWASP ZAP** | [Download Site](https://www.zaproxy.org/download/) | `zap-baseline.py -t http://localhost:8000` |
+
+### **2. Infrastructure & Cloud**
+| Tool | Installation | Usage Command |
+| :--- | :--- | :--- |
+| **Terraform** | `brew install terraform` | `terraform init && terraform apply` |
+| **AWS CLI** | `brew install awscli` | `aws eks update-kubeconfig --name <cluster>` |
+| **kubectl** | `brew install kubectl` | `kubectl get pods -n devsecops` |
+| **Helm** | `brew install helm` | `helm upgrade --install <name> ./helm/app` |
+| **KIND** | `brew install kind` | `kind create cluster --config <file>` |
 
 ---
 
@@ -92,21 +103,17 @@ terraform apply -auto-approve
 ### **Jenkins (Pipeline as Code)**
 - **File**: `jenkins/Jenkinsfile`
 - **Focus**: Enterprise self-hosted CI/CD with Groovy scripting.
-- **Prerequisites**: SonarQube Scanner, Docker Pipeline, and AWS Credentials plugins.
 
 ---
 
 ## 📊 Security Metrics & Dashboards
-The project includes pre-configured **Prometheus Rules** and **Grafana Dashboards** focusing on:
-- Rate of unauthorized (401) access attempts.
-- Vulnerability trends across builds.
-- Resource usage vs. Security Context limits.
+The project includes pre-configured **Prometheus Rules** and **Grafana Dashboards** focusing on security alerts and vulnerability trends.
 
 ---
 
 ## 💼 Interview Prep: "The DevSecOps Mindset"
 **Question**: *How do you ensure developers don't bypass security gates?*
-**Answer**: I implement **Branch Protection Rules** on GitHub, requiring a successful status check from the security pipeline before any PR can be merged to `main`. This makes the pipeline a mandatory governance gate, not just an advisory tool.
+**Answer**: I implement **Branch Protection Rules** on GitHub, requiring a successful status check from the security pipeline before any PR can be merged to `main`.
 
 ---
 
