@@ -24,7 +24,7 @@ This project addresses the critical challenge of insecure software delivery. It 
 
 ```mermaid
 graph TD
-    A[Developer Push] -->|Trigger| B[GitHub Actions]
+    A[Developer Push] -->|Trigger| B[GitHub Actions / Jenkins]
     B --> C{Security Gates}
     
     subgraph "Shift-Left Security"
@@ -80,6 +80,19 @@ cd terraform
 terraform init
 terraform apply -auto-approve
 ```
+
+---
+
+## 🏗️ Multi-Platform CI/CD Support
+
+### **GitHub Actions**
+- **File**: `.github/workflows/pipeline.yaml`
+- **Focus**: Native integration with GitHub runner and marketplace actions.
+
+### **Jenkins (Pipeline as Code)**
+- **File**: `jenkins/Jenkinsfile`
+- **Focus**: Enterprise self-hosted CI/CD with Groovy scripting.
+- **Prerequisites**: SonarQube Scanner, Docker Pipeline, and AWS Credentials plugins.
 
 ---
 
