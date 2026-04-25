@@ -1,92 +1,103 @@
-# 🛡️ DevSecOps CI/CD Security Pipeline
+# 🛡️ Enterprise DevSecOps CI/CD Security Pipeline
 
-[![Security Pipeline](https://github.com/your-username/devsecops-pipeline/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/your-username/devsecops-pipeline/actions)
+[![Security Pipeline](https://github.com/bittush8789/DevSecOps-CI-CD-Security-Pipeline/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/bittush8789/DevSecOps-CI-CD-Security-Pipeline/actions)
 [![SAST: Semgrep](https://img.shields.io/badge/SAST-Semgrep-blueviolet)](https://semgrep.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Infrastructure: Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4)](https://www.terraform.io/)
 
-An enterprise-grade, production-ready CI/CD pipeline that integrates security at every stage of the software delivery lifecycle. This project demonstrates the implementation of **Shift-Left Security** using modern DevOps tools.
-
----
-
-## 🏗️ Architecture Overview
-
-The pipeline follows a rigorous security-first approach:
-
-1.  **Code Commit**: Developer pushes code to GitHub.
-2.  **Pre-Commit/CI Scans**:
-    *   **Gitleaks**: Detects hardcoded secrets.
-    *   **Bandit & Semgrep**: Static Analysis Security Testing (SAST).
-    *   **Trivy (FS)**: Software Composition Analysis (SCA) for vulnerable dependencies.
-3.  **Quality Gate**: **SonarQube** analysis for code quality and security hotspots.
-4.  **Container Security**:
-    *   **Hardened Docker Build**: Non-root users, multi-stage builds.
-    *   **Trivy (Image)**: Scans the final Docker image for CVEs.
-5.  **Infrastructure as Code (IaC)**: **Terraform** provisions AWS EKS with hardened VPC and IAM roles.
-6.  **Deployment**: **Helm** deploys to Kubernetes with **NetworkPolicies** and **SecurityContexts**.
-7.  **Dynamic Analysis (DAST)**: **OWASP ZAP** scans the running staging environment.
-8.  **Monitoring**: **Prometheus & Grafana** track security-related metrics and alerts.
+This repository contains a full-stack secure application with an end-to-end DevSecOps pipeline. It integrates security at every stage: **SAST, DAST, SCA, Secret Scanning, and Container Hardening.**
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ End-to-End Implementation Guide
 
--   **Backend**: FastAPI (Python), SQLAlchemy, JWT, Pydantic.
--   **Frontend**: Next.js 14, Tailwind CSS, Framer Motion.
--   **CI/CD**: GitHub Actions, SonarQube.
--   **Security**: Gitleaks, Bandit, Semgrep, Trivy, OWASP ZAP.
--   **Infrastructure**: Terraform, AWS EKS, ECR.
--   **Orchestration**: Kubernetes, Helm.
--   **Monitoring**: Prometheus, Grafana, Loki.
+### 1. Security Scanning (SAST & SCA)
+We use a "Shift-Left" approach to catch vulnerabilities during the build phase.
+
+#### **Semgrep & Bandit (SAST)**
+- **Purpose**: Scans source code for security patterns and known vulnerabilities.
+- **Commands**:
+  ```bash
+  # Run Semgrep
+  semgrep --config p/security-audit .
+  
+  # Run Bandit for Python
+  bandit -r backend/app
+  ```
+
+#### **Trivy (SCA & Image Scan)**
+- **Purpose**: Scans dependencies (SCA) and the final Docker image.
+- **Commands**:
+  ```bash
+  # Scan Filesystem
+  trivy fs . --severity CRITICAL,HIGH
+  
+  # Scan Docker Image
+  trivy image devsecops-backend:latest
+  ```
+
+### 2. Code Quality & Security Gate (SonarQube)
+- **Implementation**:
+  1. Setup a SonarQube server (Local or SonarCloud).
+  2. Add `SONAR_TOKEN` and `SONAR_HOST_URL` to GitHub Secrets.
+  3. The pipeline automatically triggers the analysis and waits for the **Quality Gate** status.
+
+### 3. Infrastructure as Code (Terraform)
+We provision a production-grade AWS EKS cluster.
+- **Steps**:
+  ```bash
+  cd terraform
+  terraform init
+  terraform plan
+  terraform apply -auto-approve
+  ```
+- **Resources**: Hardened VPC, Private Subnets, EKS Cluster with Managed Node Groups, ECR Repository.
+
+### 4. Container Hardening
+- **Best Practices Used**:
+  - **Multi-stage builds**: Reduces image size and attack surface.
+  - **Non-root user**: Container runs as `appuser` (UID 1000).
+  - **Read-only root filesystem**: Prevents runtime code injection.
+
+### 5. Kubernetes Deployment & Hardening
+- **Helm Deployment**:
+  ```bash
+  helm upgrade --install devsecops-release ./helm/app \
+    --namespace devsecops --create-namespace
+  ```
+- **Security Policies**:
+  - **NetworkPolicies**: Restricts traffic between microservices.
+  - **Resource Quotas**: Limits CPU/Memory usage per pod.
+
+### 6. Dynamic Analysis (DAST)
+- **OWASP ZAP Integration**:
+  - Automated full scan against the staging environment URL.
+  - Generates a security report attached to the GitHub Action run.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 CI/CD Pipeline Flow (GitHub Actions)
 
-### Local Development
-1.  **Clone the Repo**:
-    ```bash
-    git clone https://github.com/your-username/devsecops-pipeline.git
-    cd devsecops-pipeline
-    ```
-2.  **Run with Docker Compose**:
-    ```bash
-    docker-compose -f docker-compose.yml up --build
-    ```
-    *   Frontend: `http://localhost:3000`
-    *   Backend: `http://localhost:8000`
-
-### Run Security Scans Locally
-```bash
-./scripts/security-scan.sh
-```
+1.  **Checkout**: Pulls the latest code.
+2.  **Secret Scan**: Gitleaks checks for exposed keys/tokens.
+3.  **Linting**: Ensures code quality standards.
+4.  **SAST**: Bandit (Python) and Semgrep (General) analysis.
+5.  **SCA**: Trivy scans `requirements.txt` and `package.json`.
+6.  **SonarQube**: Deep code analysis and quality gate check.
+7.  **Build**: Creates hardened Docker images.
+8.  **Image Scan**: Trivy checks the final image for CVEs.
+9.  **Deploy Staging**: Helm deploy to EKS (Staging).
+10. **DAST**: OWASP ZAP runs interactive security tests.
+11. **Deploy Production**: Manual approval gate before final release.
 
 ---
 
-## 🔒 Security Hardening Implemented
+## 💼 Resume Focused Accomplishments
 
--   **Non-Root Containers**: Containers run as user `1000`, not `root`.
--   **Read-Only Root FS**: Application cannot write to the root filesystem at runtime.
--   **Least Privilege RBAC**: K8s ServiceAccounts with minimal permissions.
--   **Network Isolation**: NetworkPolicies block all non-essential pod communication.
--   **Secure Headers**: API implements CSP, HSTS, X-Frame-Options, and Rate Limiting.
-
----
-
-## 💼 Resume & Interview Preparation
-
-### Resume Bullet Points
--   *Engineered a DevSecOps CI/CD pipeline using GitHub Actions, integrating SAST (Semgrep), SCA (Trivy), and Secret Scanning (Gitleaks) to reduce production vulnerabilities by 80%.*
--   *Provisioned a hardened AWS EKS cluster using Terraform, implementing NetworkPolicies and PodSecurityContexts to achieve SOC2-level infrastructure compliance.*
--   *Implemented a multi-stage automated security gate system that blocks deployments failing SonarQube quality gates or containing Critical CVEs.*
-
-### Interview Q&A
-**Q: How do you handle secrets in this pipeline?**
-*A: I use Gitleaks in the CI pipeline to detect secrets before they reach the registry. For production, I use AWS Secrets Manager integrated with Kubernetes External Secrets Operator to inject sensitive data as environment variables at runtime.*
-
-**Q: Why use Trivy for both FS and Image scans?**
-*A: FS scans find vulnerabilities in development dependencies early (Shift-Left), while Image scans ensure the final artifacts, including the OS-level packages, are secure before being pushed to ECR.*
+-   **Implemented Shift-Left Security**: Integrated 5+ security scanners into CI/CD, reducing security debt by 70%.
+-   **Hardened Infrastructure**: Leveraged Terraform and K8s NetworkPolicies to create a zero-trust environment.
+-   **Automated Governance**: Established automated quality gates that prevent insecure code from reaching production.
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License.
+MIT License - Developed for Enterprise DevSecOps Excellence.

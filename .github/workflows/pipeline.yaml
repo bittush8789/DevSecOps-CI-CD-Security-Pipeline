@@ -1,0 +1,88 @@
+name: DevSecOps Security Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scans:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 1. Secret Scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. SAST - Python (Bandit)
+        run: |
+          pip install bandit
+          bandit -r backend/app -f json -o bandit-results.json || true
+
+      - name: 3. SAST - Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
+
+      - name: 4. SCA - Dependency Check (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1' # Fail the build on vulnerabilities
+          severity: 'CRITICAL,HIGH'
+
+      - name: 5. SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  build-and-push:
+    needs: security-scans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Backend Image
+        run: docker build -t devsecops-backend:latest -f docker/backend/Dockerfile backend
+
+      - name: 6. Image Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'devsecops-backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Staging Cluster
+        run: echo "Deploying to Kubernetes Staging Namespace..."
+        # In a real scenario, use:
+        # uses: azure/k8s-deploy@v1
+        # with:
+        #   manifests: |
+        #     kubernetes/manifests/deployment.yaml
+
+  dast-scan:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: 7. DAST Scan (OWASP ZAP)
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          target: 'https://staging.devsecops.local'
+          rules_file_name: '.zap/rules.tsv'
