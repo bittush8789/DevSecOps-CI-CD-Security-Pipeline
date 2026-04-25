@@ -11,7 +11,7 @@
 ---
 
 ## 📖 Project Overview
-This project addresses the critical challenge of insecure software delivery. It implements a **Shift-Left Security** strategy by integrating comprehensive scanning tools directly into the CI/CD pipeline, ensuring that only "clean" code reaches production.
+This project addresses the critical challenge of insecure software delivery. It implements a **Shift-Left Security** strategy by integrating comprehensive scanning tools directly into the CI/CD pipeline.
 
 ### 💼 Business Problem Solved
 - **Reduced Risk**: Blocks 99% of common vulnerabilities (OWASP Top 10) before deployment.
@@ -45,82 +45,52 @@ graph TD
 
 ---
 
-## 🛠️ Detailed Implementation Walkthrough
+## 🛠️ Toolchain Installation (Ubuntu/Debian)
 
-### 1. **Secret Scanning (Gitleaks)**
-- **Role**: Prevents API keys and passwords from entering the git history.
-- **Implementation**: Runs as the first job in the pipeline. Blocks the build if any high-entropy strings or known key patterns are found.
+### **1. Security Scanners**
+| Tool | Installation Commands | Usage |
+| :--- | :--- | :--- |
+| **Gitleaks** | `wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_linux_x64.tar.gz && tar -xf gitleaks* && sudo mv gitleaks /usr/local/bin/` | `gitleaks detect -v` |
+| **Trivy** | `sudo apt-get install wget apt-transport-https gnupg lsb-release && wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add - && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list && sudo apt-get update && sudo apt-get install trivy` | `trivy fs .` |
+| **Semgrep** | `python3 -m pip install semgrep` | `semgrep --config p/security-audit .` |
+| **Bandit** | `pip3 install bandit` | `bandit -r backend/app` |
 
-### 2. **Static Analysis (SAST)**
-- **Bandit**: Specifically targets Python security issues (shell injection, insecure imports).
-- **Semgrep**: Uses customizable rulesets to enforce company-wide security standards across the entire stack.
-
-### 3. **Software Composition Analysis (SCA)**
-- **Trivy FS**: Analyzes `package.json` and `requirements.txt` for known CVEs in 3rd-party libraries.
-- **Gate Logic**: Fails the build if any `CRITICAL` or `HIGH` severity vulnerabilities are detected.
+### **2. Infrastructure & Cloud**
+| Tool | Installation Commands | Usage |
+| :--- | :--- | :--- |
+| **Docker** | `sudo apt update && sudo apt install docker.io -y && sudo usermod -aG docker $USER` | `docker build ...` |
+| **kubectl** | `curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl` | `kubectl get pods` |
+| **Terraform** | `wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list && sudo apt update && sudo apt install terraform` | `terraform apply` |
+| **Helm** | `curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash` | `helm install ...` |
+| **KIND** | `[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind` | `kind create cluster` |
 
 ---
 
-## 🚀 Quick Start Guide
-
-### 🐳 Local Kubernetes (KIND)
+## 🚀 Quick Start Guide (Local Development)
 ```bash
-# Setup multi-node cluster with Ingress & Hardened Apps
+# Local K8s testing
 chmod +x scripts/setup-kind.sh
 ./scripts/setup-kind.sh
 ```
 
 ---
 
-## 🛠️ Toolchain Installation & Reference
-
-### **1. Security Scanners**
-| Tool | Installation (Linux/macOS) | Usage Command |
-| :--- | :--- | :--- |
-| **Gitleaks** | `brew install gitleaks` | `gitleaks detect --source . -v` |
-| **Trivy** | `brew install aquasecurity/trivy/trivy` | `trivy fs .` or `trivy image <img_id>` |
-| **Semgrep** | `python3 -m pip install semgrep` | `semgrep --config p/security-audit .` |
-| **Bandit** | `pip install bandit` | `bandit -r backend/app` |
-| **OWASP ZAP** | [Download Site](https://www.zaproxy.org/download/) | `zap-baseline.py -t http://localhost:8000` |
-
-### **2. Infrastructure & Cloud**
-| Tool | Installation | Usage Command |
-| :--- | :--- | :--- |
-| **Terraform** | `brew install terraform` | `terraform init && terraform apply` |
-| **AWS CLI** | `brew install awscli` | `aws eks update-kubeconfig --name <cluster>` |
-| **kubectl** | `brew install kubectl` | `kubectl get pods -n devsecops` |
-| **Helm** | `brew install helm` | `helm upgrade --install <name> ./helm/app` |
-| **KIND** | `brew install kind` | `kind create cluster --config <file>` |
-
----
-
 ## 🏗️ Multi-Platform CI/CD Support
-
-### **GitHub Actions**
-- **File**: `.github/workflows/pipeline.yaml`
-- **Focus**: Native integration with GitHub runner and marketplace actions.
-
-### **Jenkins (Pipeline as Code)**
-- **File**: `jenkins/Jenkinsfile`
-- **Focus**: Enterprise self-hosted CI/CD with Groovy scripting.
+- **GitHub Actions**: `.github/workflows/pipeline.yaml`
+- **Jenkins**: `jenkins/Jenkinsfile` (Requires SonarQube & Docker plugins)
 
 ---
 
-## 📊 Security Metrics & Dashboards
-The project includes pre-configured **Prometheus Rules** and **Grafana Dashboards** focusing on security alerts and vulnerability trends.
+## 📊 Security Metrics
+Includes **Prometheus Rules** for real-time vulnerability tracking and security context violations.
 
 ---
 
-## 💼 Interview Prep: "The DevSecOps Mindset"
-**Question**: *How do you ensure developers don't bypass security gates?*
-**Answer**: I implement **Branch Protection Rules** on GitHub, requiring a successful status check from the security pipeline before any PR can be merged to `main`.
+## 💼 Interview Prep
+**Q**: *How do you manage security in a production Kubernetes cluster?*
+**A**: I implement **NetworkPolicies** to enforce zero-trust isolation, use **PodSecurityContexts** to prevent privilege escalation, and integrate **Image Scanning** in the CI/CD to block vulnerable containers.
 
 ---
 
-## 🛡️ Support & Contributors
-- **Author**: Bittu Sharma
-- **Version**: 1.0.0
-- **License**: MIT
-
----
-*Built for the modern Cloud-Native world.*
+## 🛡️ Support
+- **Author**: Bittu Sharma | **Version**: 1.0.0 | **License**: MIT
